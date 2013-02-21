@@ -3,7 +3,8 @@ export KERNELDIR=`readlink -f .`
 export RAMFS_SOURCE=`readlink -f $KERNELDIR/../ramfs-sgs3`
 export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
-CROSS_COMPILE=$PARENT_DIR/android_prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
+# GCC 4.7.2
+export CROSS_COMPILE=$PARENT_DIR/../arm-2012/bin_472/arm-linux-gnueabihf-
 
 if [ "${1}" != "" ];then
   export KERNELDIR=`readlink -f ${1}`
@@ -41,12 +42,13 @@ mkdir -p $INITRAMFS/lib/modules
 mv -f drivers/media/video/samsung/mali_r3p0_lsi/mali.ko drivers/media/video/samsung/mali_r3p0_lsi/mali_r3p0_lsi.ko
 mv -f drivers/net/wireless/bcmdhd.cm/dhd.ko drivers/net/wireless/bcmdhd.cm/dhd_cm.ko
 find -name '*.ko' -exec cp -av {} $RAMFS_TMP/lib/modules/ \;
-/opt/toolchains/arm-eabi-4.4.3/bin/arm-eabi-strip --strip-unneeded $RAMFS_TMP/lib/modules/*
+${CROSS_COMPILE}strip --strip-unneeded $RAMFS_TMP/lib/modules/*
 
 cd $RAMFS_TMP
 find | fakeroot cpio -H newc -o > $RAMFS_TMP.cpio 2>/dev/null
 ls -lh $RAMFS_TMP.cpio
 gzip -9 $RAMFS_TMP.cpio
+#xz --check=crc32 --lzma2=dict=1MiB $RAMFS_TMP.cpio
 cd -
 
 nice -n 10 make -j3 zImage || exit 1
@@ -54,5 +56,5 @@ nice -n 10 make -j3 zImage || exit 1
 ./mkbootimg --kernel $KERNELDIR/arch/arm/boot/zImage --ramdisk $RAMFS_TMP.cpio.gz --board smdk4x12 --base 0x10000000 --pagesize 2048 --ramdiskaddr 0x11000000 -o $KERNELDIR/boot.img.pre
 
 $KERNELDIR/mkshbootimg.py $KERNELDIR/boot.img $KERNELDIR/boot.img.pre $KERNELDIR/payload.tar
-rm -f $KERNELDIR/boot.img.pre
+#rm -f $KERNELDIR/boot.img.pre
 

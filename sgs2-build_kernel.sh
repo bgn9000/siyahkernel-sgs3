@@ -1,6 +1,6 @@
 #!/bin/sh
 export KERNELDIR=`readlink -f .`
-export INITRAMFS_SOURCE=`readlink -f $KERNELDIR/../initramfs3`
+export INITRAMFS_SOURCE=`readlink -f $KERNELDIR/../ramfs-sgs3`
 export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
 
@@ -9,10 +9,12 @@ if [ "${1}" != "" ];then
 fi
 
 INITRAMFS_TMP="/tmp/initramfs-source"
+# GCC 4.7.2
+export CROSS_COMPILE=$PARENT_DIR/../arm-2012/bin_472/arm-linux-gnueabihf-
 
 if [ ! -f $KERNELDIR/.config ];
 then
-  make siyah_sgs2_defconfig
+  make siyah_defconfig
 fi
 
 . $KERNELDIR/.config
