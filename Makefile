@@ -355,9 +355,8 @@ XX_MODULO   = 	-fmodulo-sched -fmodulo-sched-allow-regmoves
 
 #-fsched-spec-load \
 #-floop-interchange -floop-block \
-#-ffast-math -ftree-vectorize \
-#-funswitch-loops -fpredictive-commoning -fgcse-after-reload \ 
-#-fipa-cp-clone -pipe \
+#-ffast-math
+#-pipe \
 #-Wno-array-bounds
 
 
@@ -378,12 +377,15 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
+O3_02 := -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone \
+	-funswitch-loops -ftree-vectorize -ftree-loop-distribute-patterns
+Ofast_O3 := -ffast-math
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
-		   $(XX_A9) $(XX_GRAPHITE) $(XX_MODULO)
+		   $(XX_A9) $(XX_GRAPHITE) $(XX_MODULO) $(O3_O2) $(Ofast_O3)
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=

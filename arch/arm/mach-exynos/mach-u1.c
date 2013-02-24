@@ -3039,7 +3039,7 @@ REGULATOR_INIT(ldo12, "VT_CAM_1.8V", 1800000, 1800000, 0,
 REGULATOR_INIT(ldo13, "VCC_3.0V_LCD", 3100000, 3100000, 1,
 		REGULATOR_CHANGE_STATUS, 1);
 #else
-REGULATOR_INIT(ldo13, "VCC_3.0V_LCD", 3000000, 3000000, 1,
+REGULATOR_INIT(ldo13, "VCC_3.0V_LCD", 2800000, 2800000, 1,
 		REGULATOR_CHANGE_STATUS, 1);
 #endif
 #if defined(CONFIG_MACH_Q1_BD)
@@ -3141,12 +3141,12 @@ static struct regulator_init_data buck4_init_data = {
 static struct regulator_init_data buck5_init_data = {
 	.constraints	= {
 		.name		= "VMEM_1.2V",
-		.min_uV		= 1200000,
-		.max_uV		= 1200000,
+		.min_uV		= 1100000,
+		.max_uV		= 1100000,
 		.apply_uV	= 1,
 		.always_on	= 1,
 		.state_mem	= {
-			.uV	= 1200000,
+			.uV	= 1100000,
 			.mode	= REGULATOR_MODE_NORMAL,
 			.enabled = 1,
 		},
@@ -3747,7 +3747,7 @@ static struct max8997_platform_data exynos4_max8997_info = {
 	.buck1_gpiodvs	= false,
 	.buck1_max_vol	= 1350000,
 	.buck2_max_vol	= 1150000,
-	.buck5_max_vol	= 1200000,
+	.buck5_max_vol	= 1100000,
 	.buck_set1 = GPIO_BUCK1_EN_A,
 	.buck_set2 = GPIO_BUCK1_EN_B,
 	.buck_set3 = GPIO_BUCK2_EN,
