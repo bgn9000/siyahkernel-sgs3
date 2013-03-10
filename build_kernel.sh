@@ -19,7 +19,7 @@ RAMFS_TMP="/tmp/ramfs-source-sgs3"
 
 if [ ! -f $KERNELDIR/.config ];
 then
-  make siyah_defconfig
+  make bgn9000_defconfig
 fi
 
 . $KERNELDIR/.config
