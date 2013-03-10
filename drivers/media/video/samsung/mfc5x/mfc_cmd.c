@@ -142,8 +142,6 @@ mfc_wait_sys(struct mfc_dev *dev, enum mfc_r2h_ret ret, long timeout)
 	}
 
 #if SUPPORT_SLICE_ENCODING
-_SUPPORT_SLICE_ENCODING
-{
 	if ((ret == FRAME_DONE_RET) && (r2h_cmd == EDFU_INIT_RET)
 		&& (dev->slice_encoding_flag == 0)) {
 		mfc_dbg("Slice encoding start : %d\n", r2h_cmd);
@@ -157,13 +155,10 @@ _SUPPORT_SLICE_ENCODING
 		if (dev->wait_slice_timeout == 1)
 			wake_up(&dev->wait_slice);
 	}
-}
 #endif
 
 	if (r2h_cmd != ret) {
 #if SUPPORT_SLICE_ENCODING
-_SUPPORT_SLICE_ENCODING
-{
 		/* exceptional case: FRAME_START -> EDFU_INIT_RET */
 		if ((ret == FRAME_DONE_RET) && (r2h_cmd == EDFU_INIT_RET))
 			return true;
@@ -171,7 +166,6 @@ _SUPPORT_SLICE_ENCODING
 		/* exceptional case: CLOSE_CH_RET -> ABORT_RET */
 		if ((ret == CLOSE_CH_RET) && (r2h_cmd == ABORT_RET))
 			return true;
-}
 #endif
 		mfc_err("F/W return (%d) waiting for (%d)\n",
 			r2h_cmd, ret);
@@ -358,8 +352,6 @@ int mfc_cmd_inst_close(struct mfc_inst_ctx *ctx)
 		return MFC_CLOSE_FAIL;
 	}
 #if SUPPORT_SLICE_ENCODING
-_SUPPORT_SLICE_ENCODING
-{
 	/* retry instance close */
 	if (r2h_cmd == ABORT_RET) {
 		if (write_h2r_cmd(CLOSE_CH, &h2r_args) == false)
@@ -371,7 +363,6 @@ _SUPPORT_SLICE_ENCODING
 			return MFC_CLOSE_FAIL;
 		}
 	}
-}
 #endif
 
 	return MFC_OK;

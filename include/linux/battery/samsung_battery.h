@@ -115,7 +115,6 @@ struct battery_info {
 	unsigned int cable_type;
 	unsigned int cable_sub_type;
 	unsigned int cable_pwr_type;
-	int online_prop;
 
 	/* For SAMSUNG charge spec */
 	unsigned int vf_state;
@@ -206,12 +205,6 @@ extern bool is_jig_attached;
 #undef EXTENDED_ONLINE_TYPE
 #endif
 
-enum online_property {
-	ONLINE_PROP_UNKNOWN = 0,
-	ONLINE_PROP_AC,
-	ONLINE_PROP_USB,
-};
-
 /* use 2step charge termination */
 #if defined(CONFIG_MACH_T0)
 #define USE_2STEP_TERM
@@ -276,11 +269,7 @@ enum status_full_type {
 
 /* WORKAROUND: define audio dock current */
 #define DOCK_TYPE_AUDIO_CURR		1000
-#if defined(CONFIG_MACH_T0)
 #define DOCK_TYPE_SMART_NOTG_CURR	1700
-#else
-#define DOCK_TYPE_SMART_NOTG_CURR	1000
-#endif
 #define DOCK_TYPE_SMART_OTG_CURR	1000
 #define DOCK_TYPE_LOW_CURR		475
 

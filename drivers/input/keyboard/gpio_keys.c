@@ -26,9 +26,6 @@
 #include <linux/workqueue.h>
 #include <linux/gpio.h>
 #include <linux/irqdesc.h>
-#ifdef CONFIG_SLIDE_TO_WAKE
-extern void slide2wake_setdev(struct input_dev *input_device);
-#endif
 
 extern struct class *sec_class;
 
@@ -445,31 +442,8 @@ static void gpio_keys_fake_off_check(unsigned long _data)
 }
 #endif
 
-static inline int64_t get_time_inms(void) {
-	int64_t tinms;
-	struct timespec cur_time = current_kernel_time();
-	tinms =  cur_time.tv_sec * MSEC_PER_SEC;
-	tinms += cur_time.tv_nsec / NSEC_PER_MSEC;
-	return tinms;
-}
-
-#ifdef CONFIG_MACH_U1
-#define HOME_KEY_VAL	102
-#else
-#define HOME_KEY_VAL	0xac
-#endif
-extern void mdnie_toggle_negative(void);
-int homekey_trg_cnt = 4;
-int homekey_trg_ms = 300;
-
-static int mdnie_shortcut_enabled = 1;
-module_param_named(mdnie_shortcut_enabled, mdnie_shortcut_enabled, int, S_IRUGO | S_IWUSR | S_IWGRP);
-
 static void gpio_keys_report_event(struct gpio_button_data *bdata)
 {
-	static int64_t homekey_lasttime = 0;
-	static int homekey_count = 0;
-	
 	struct gpio_keys_button *button = bdata->button;
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
@@ -520,29 +494,6 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
 				&hotkey, &index_hotkey);
 	}
 #endif
-
-	//mdnie negative effect toggle by gm
-	if((button->code == HOME_KEY_VAL) && mdnie_shortcut_enabled)
-	{
-		if(state) {
-			if (  get_time_inms() - homekey_lasttime < homekey_trg_ms) {
-				homekey_count++;
-				printk(KERN_INFO "repeated home_key action %d.\n", homekey_count);
-			}
-			else
-			{
-				homekey_count = 0;
-			}
-		}
-		else {
-			if(homekey_count>=homekey_trg_cnt - 1)
-			{
-				mdnie_toggle_negative();
-				homekey_count = 0;
-			}
-			homekey_lasttime = get_time_inms();
-		}
-	}
 
 	if (type == EV_ABS) {
 		if (state) {
@@ -775,9 +726,6 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 			wakeup = 1;
 
 		input_set_capability(input, type, button->code);
-#ifdef CONFIG_SLIDE_TO_WAKE
-		slide2wake_setdev(input);
-#endif
 	}
 
 	error = sysfs_create_group(&pdev->dev.kobj, &gpio_keys_attr_group);

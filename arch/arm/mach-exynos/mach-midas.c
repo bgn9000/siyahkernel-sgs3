@@ -44,7 +44,7 @@
 #include <linux/power/max8922_charger_u1.h>
 #endif
 
-#ifdef CONFIG_BT_BCM4334
+#if defined(CONFIG_BT_BCM4334)
 #include <mach/board-bluetooth-bcm.h>
 #endif
 
@@ -193,7 +193,7 @@ static struct s3c2410_uartcfg smdk4212_uartcfgs[] __initdata = {
 		.ucon		= SMDK4212_UCON_DEFAULT,
 		.ulcon		= SMDK4212_ULCON_DEFAULT,
 		.ufcon		= SMDK4212_UFCON_DEFAULT,
-#ifdef CONFIG_BT_BCM4334
+#if defined(CONFIG_BT_BCM4334)
 		.wake_peer = bcm_bt_lpm_exit_lpm_locked,
 #endif
 	},
@@ -323,15 +323,7 @@ static void touchkey_init_hw(void)
 	defined(CONFIG_MACH_M3) || \
 	defined(CONFIG_MACH_T0) || \
 	defined(CONFIG_MACH_BAFFIN)
-
-#if defined(CONFIG_MACH_M3_JPN_DCM)
-	if (system_rev < 3)
-		gpio_request(GPIO_3_TOUCH_EN_R1, "gpio_3_touch_en");
-	else
 	gpio_request(GPIO_3_TOUCH_EN, "gpio_3_touch_en");
-#else
-	gpio_request(GPIO_3_TOUCH_EN, "gpio_3_touch_en");
-#endif
 #if defined(CONFIG_MACH_C1_KOR_LGT)
 	gpio_request(GPIO_3_TOUCH_LDO_EN, "gpio_3_touch_ldo_en");
 #endif
@@ -417,24 +409,10 @@ static int touchkey_power_on(bool on)
 static int touchkey_led_power_on(bool on)
 {
 #if defined(LED_LDO_WITH_EN_PIN)
-#if defined(CONFIG_MACH_M3_JPN_DCM)
-	if (system_rev < 3) {
-		if (on)
-			gpio_direction_output(GPIO_3_TOUCH_EN_R1, 1);
-		else
-			gpio_direction_output(GPIO_3_TOUCH_EN_R1, 0);
-	} else {
 	if (on)
 		gpio_direction_output(GPIO_3_TOUCH_EN, 1);
 	else
 		gpio_direction_output(GPIO_3_TOUCH_EN, 0);
-	}
-#else
-	if (on)
-		gpio_direction_output(GPIO_3_TOUCH_EN, 1);
-	else
-		gpio_direction_output(GPIO_3_TOUCH_EN, 0);
-#endif
 #else
 	struct regulator *regulator;
 
@@ -2126,52 +2104,6 @@ struct platform_device coresight_etm_device = {
 
 #endif
 
-#ifdef CONFIG_CPUPOWER
-#include <linux/power/cpupower.h>
-static unsigned int table_default_power[1] = {
-	1024
-};
-
-static struct cputopo_power default_cpu_power = {
-	.max  = 1,
-	.step = 1,
-	.table = table_default_power,
-};
-
-static unsigned int table_ca9_power[18] = {
-/* freq< 
-    200  300  400  500
-    600  700  800  900
-   1000 1100 1200 1300
-   1400 1500 1600 1700
-   1800 other*/
-	8192, 8192, 8192, 8192,
-	8192, 1024, 1024, 1024,
-	1024, 1024, 1024, 1024,
-	1024, 1024, 1024, 1024,
-	1024, 1024,
-};
-
-static struct cputopo_power CA9_cpu_power = {
-	.max  = 18,
-	.step = 100000,
-	.table = table_ca9_power,
-};
-
-/* This table list all possible cpu power configuration */
-static struct cputopo_power *midas_cpupower_data[2] = {
-	&default_cpu_power,
-	&CA9_cpu_power,
-};
-
-static struct platform_device midas_cpupower_dev = {
-	.name = "cpupower",
-	.dev = {
-		.platform_data = midas_cpupower_data,
-	},
-};
-#endif
-
 static struct platform_device *midas_devices[] __initdata = {
 #ifdef CONFIG_SEC_WATCHDOG_RESET
 	&watchdog_reset_device,
@@ -2439,9 +2371,6 @@ static struct platform_device *midas_devices[] __initdata = {
 	&coresight_tpiu_device,
 	&coresight_funnel_device,
 	&coresight_etm_device,
-#endif
-#ifdef CONFIG_CPUPOWER
-	&midas_cpupower_dev,
 #endif
 };
 
@@ -2930,18 +2859,6 @@ static inline int need_i2c5(void)
 #if defined(CONFIG_FELICA)
 static void felica_setup(void)
 {
-#if defined(CONFIG_MACH_M3_JPN_DCM)
-	if (system_rev < 3) {
-		/* I2C SDA GPY2[4] */
-		gpio_request(FELICA_GPIO_I2C_SDA_R1, FELICA_GPIO_I2C_SDA_NAME);
-		s3c_gpio_setpull(FELICA_GPIO_I2C_SDA_R1, S3C_GPIO_PULL_DOWN);
-		gpio_free(FELICA_GPIO_I2C_SDA_R1);
-
-		/* I2C SCL GPY2[5] */
-		gpio_request(FELICA_GPIO_I2C_SCL_R1, FELICA_GPIO_I2C_SCL_NAME);
-		s3c_gpio_setpull(FELICA_GPIO_I2C_SCL_R1, S3C_GPIO_PULL_DOWN);
-		gpio_free(FELICA_GPIO_I2C_SCL_R1);
-	} else {
 	/* I2C SDA GPY2[4] */
 	gpio_request(FELICA_GPIO_I2C_SDA, FELICA_GPIO_I2C_SDA_NAME);
 	s3c_gpio_setpull(FELICA_GPIO_I2C_SDA, S3C_GPIO_PULL_DOWN);
@@ -2951,18 +2868,7 @@ static void felica_setup(void)
 	gpio_request(FELICA_GPIO_I2C_SCL, FELICA_GPIO_I2C_SCL_NAME);
 	s3c_gpio_setpull(FELICA_GPIO_I2C_SCL, S3C_GPIO_PULL_DOWN);
 	gpio_free(FELICA_GPIO_I2C_SCL);
-	}
-#elif defined(CONFIG_MACH_T0_JPN_LTE_DCM)
-	/* I2C SDA GPY2[4] */
-	gpio_request(FELICA_GPIO_I2C_SDA, FELICA_GPIO_I2C_SDA_NAME);
-	s3c_gpio_setpull(FELICA_GPIO_I2C_SDA, S3C_GPIO_PULL_DOWN);
-	gpio_free(FELICA_GPIO_I2C_SDA);
 
-	/* I2C SCL GPY2[5] */
-	gpio_request(FELICA_GPIO_I2C_SCL, FELICA_GPIO_I2C_SCL_NAME);
-	s3c_gpio_setpull(FELICA_GPIO_I2C_SCL, S3C_GPIO_PULL_DOWN);
-	gpio_free(FELICA_GPIO_I2C_SCL);
-#endif
 	/* PON GPL2[7] */
 	gpio_request(FELICA_GPIO_PON, FELICA_GPIO_PON_NAME);
 	s3c_gpio_setpull(FELICA_GPIO_PON, S3C_GPIO_PULL_DOWN);
@@ -3010,18 +2916,6 @@ static void __init midas_machine_init(void)
 	  */
 	__raw_writel(0x0, S5P_CMU_RESET_ISP_SYS);
 
-#if defined(CONFIG_MACH_M3_JPN_DCM)
-	if (system_rev < 3) {
-		i2c10_platdata.sda_pin = GPIO_MSENSOR_SDA_18V_R1;
-		i2c10_platdata.scl_pin = GPIO_MSENSOR_SCL_18V_R1;
-#ifdef CONFIG_BATTERY_WPC_CHARGER
-		max77693_charger_pdata.vbus_irq_gpio = GPIO_V_BUS_INT_R1;
-#endif
-		i2c30_gpio_platdata.sda_pin = FELICA_GPIO_I2C_SDA_R1;
-		i2c30_gpio_platdata.scl_pin = FELICA_GPIO_I2C_SCL_R1;
-	}
-#endif
-
 	/* initialise the gpios */
 	midas_config_gpio_table();
 	exynos4_sleep_gpio_table_set = midas_config_sleep_gpio_table;
@@ -3054,7 +2948,7 @@ static void __init midas_machine_init(void)
 #endif
 
 #ifdef CONFIG_S3C_DEV_I2C4
-#if defined(CONFIG_MACH_T0) || defined(CONFIG_MACH_M3_JPN_DCM)
+#if defined(CONFIG_MACH_T0)
 	s3c_i2c4_set_platdata(NULL);
 #else
 	s3c_i2c4_set_platdata(NULL);
@@ -3298,9 +3192,7 @@ static void __init midas_machine_init(void)
 	platform_add_devices(midas_devices, ARRAY_SIZE(midas_devices));
 
 #ifdef CONFIG_S3C_ADC
-#if defined(CONFIG_MACH_GC1) || \
-	defined(CONFIG_MACH_T0)  || \
-	defined(CONFIG_MACH_M3_JPN_DCM)
+#if defined(CONFIG_MACH_GC1) || defined(CONFIG_MACH_T0)
 	platform_device_register(&s3c_device_adc);
 #else
 	if (system_rev != 3)
@@ -3492,7 +3384,7 @@ static void __init midas_machine_init(void)
 	/* 400 kHz for initialization of MMC Card  */
 	__raw_writel((__raw_readl(EXYNOS4_CLKDIV_FSYS3) & 0xfffffff0)
 		     | 0x9, EXYNOS4_CLKDIV_FSYS3);
-#if defined(CONFIG_MACH_T0) || defined(CONFIG_MACH_M3_JPN_DCM)
+#ifdef CONFIG_MACH_T0
 	__raw_writel((__raw_readl(EXYNOS4_CLKDIV_FSYS2) & 0xfff0fff0)
 		     | 0x90009, EXYNOS4_CLKDIV_FSYS2);
 #else
@@ -3538,16 +3430,29 @@ static void __init exynos4_reserve(void)
 			.start = 0x65800000,
 			.reserved = 1,
 		};
-
+		
 		if (cma_early_region_register(&fimc_reg))
 			pr_err("S5P/CMA: Failed to register '%s'\n",
-						fimc_reg.name);
+				fimc_reg.name);
 	}
 #endif
 
 #if defined(CONFIG_USE_MFC_CMA) && defined(CONFIG_MACH_M0)
 	ret = dma_declare_contiguous(&s5p_device_mfc.dev,
 			0x02800000, 0x5C800000, 0);
+
+	if (ret == 0) {
+		static struct cma_region mfc_reg = {
+			.name = "mfc",
+			.size = 0x02800000,
+			.start = 0x5C800000,
+			.reserved = 1,
+		};
+
+		if (cma_early_region_register(&mfc_reg))
+			pr_err("S5P/CMA: Failed to register '%s'\n",
+				mfc_reg.name);
+	}
 #endif
 	if (ret != 0)
 		printk(KERN_ERR "%s Fail\n", __func__);

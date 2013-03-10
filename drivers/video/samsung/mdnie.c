@@ -417,7 +417,7 @@ static int mdnie_set_brightness(struct backlight_device *bd)
 
 	if ((mdnie->enable) && (mdnie->bd_enable)) {
 		ret = update_brightness(mdnie);
-		dev_dbg(&bd->dev, "brightness=%d\n", bd->props.brightness);
+		dev_info(&bd->dev, "brightness=%d\n", bd->props.brightness);
 		if (ret < 0)
 			return -EINVAL;
 	}
@@ -494,11 +494,11 @@ static ssize_t scenario_store(struct device *dev,
 	dev_info(dev, "%s :: value=%d\n", __func__, value);
 
 	if (!SCENARIO_IS_VALID(value))
-		value = UI_MODE;
+		value = CYANOGENMOD_MODE;
 
 #if defined(CONFIG_FB_MDNIE_PWM)
 	if (value >= SCENARIO_MAX)
-		value = UI_MODE;
+		value = CYANOGENMOD_MODE;
 #endif
 
 	mutex_lock(&mdnie->lock);
@@ -808,7 +808,7 @@ void mdnie_late_resume(struct early_suspend *h)
 		pd->power_on(NULL, 1);
 
 	if (mdnie->enable) {
-		dev_dbg(&mdnie->bd->dev, "brightness=%d\n", mdnie->bd->props.brightness);
+		dev_info(&mdnie->bd->dev, "brightness=%d\n", mdnie->bd->props.brightness);
 		update_brightness(mdnie);
 	}
 
@@ -824,16 +824,6 @@ void mdnie_late_resume(struct early_suspend *h)
 }
 #endif
 #endif
-
-//gm
-void mdnie_toggle_negative(void)
-{
-	mutex_lock(&g_mdnie->lock);
-	g_mdnie->negative = !g_mdnie->negative;
-	mutex_unlock(&g_mdnie->lock);
-
-	set_mdnie_value(g_mdnie, 0);
-}
 
 static int mdnie_probe(struct platform_device *pdev)
 {
@@ -885,7 +875,7 @@ static int mdnie_probe(struct platform_device *pdev)
 		dev_err(&mdnie->bd->dev, "failed to add sysfs entries, %d\n", __LINE__);
 #endif
 
-	mdnie->scenario = UI_MODE;
+	mdnie->scenario = CYANOGENMOD_MODE;
 	mdnie->mode = STANDARD;
 	mdnie->tone = TONE_NORMAL;
 	mdnie->outdoor = OUTDOOR_OFF;

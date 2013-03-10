@@ -193,7 +193,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
 ARCH		?= arm
-CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+CROSS_COMPILE	?= ../../../prebuilt/linux-x86/toolchain/arm-eabi-4.4.3/bin/arm-eabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -347,19 +347,6 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-XX_A9 	    = 	-marm -march=armv7-a \
-		-mcpu=cortex-a9 -mfpu=vfp3 -mfloat-abi=softfp
-XX_GRAPHITE = 	-fgraphite-identity -floop-block -ftree-loop-linear \
-		-floop-strip-mine -ftree-loop-distribution
-XX_MODULO   = 	-fmodulo-sched -fmodulo-sched-allow-regmoves
-
-#-fsched-spec-load \
-#-floop-interchange -floop-block \
-#-ffast-math
-#-pipe \
-#-Wno-array-bounds
-
-
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
@@ -377,16 +364,12 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-O3_02 := -fpredictive-commoning -fgcse-after-reload -fipa-cp-clone \
-	-funswitch-loops -ftree-vectorize -ftree-loop-distribute-patterns
-Ofast_O3 := -ffast-math
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -fno-delete-null-pointer-checks \
-		   $(XX_A9) $(XX_GRAPHITE) $(XX_MODULO) $(O3_O2) $(Ofast_O3)
-
+		   -mtune=cortex-a9
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -579,7 +562,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2 #Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
 ifdef CONFIG_CC_CHECK_WARNING_STRICTLY

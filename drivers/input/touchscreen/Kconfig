@@ -997,17 +997,4 @@ config TOUCHSCREEN_ATMEL_MXT540S
 
 source "drivers/input/touchscreen/wacom/Kconfig"
 
-config TOUCHSCREEN_GESTURES
-        bool "Enable detection of touch gestures"
-        depends on TOUCHSCREEN_ATMEL_MXT224_U1 || TOUCHSCREEN_MELFAS
-        ---help---
-          This option enables the mxt224_u1 touchscreen device to
-          detect and report touch gestures.
-          Definition of the gesture paths and reporting of the
-          detections are available through sysfs entries.
-
-config SLIDE_TO_WAKE
-        bool "Enable slide-to-wake"
-        depends on TOUCHSCREEN_ATMEL_MXT224_U1 || TOUCHSCREEN_MELFAS
-
 endif
