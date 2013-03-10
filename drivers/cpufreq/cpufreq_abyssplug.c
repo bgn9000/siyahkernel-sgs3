@@ -39,7 +39,7 @@
 #define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(1)
 
 /* less than 20% avg load across online CPUs decreases frequency */
-#define DEFAULT_DOWN_FREQ_MAX_LOAD			(40)
+#define DEFAULT_DOWN_FREQ_MAX_LOAD			(50)
 
 /* default sampling period (uSec) is bogus; 10x ondemand's default for x86 */
 #define DEFAULT_SAMPLING_PERIOD				(100000)
