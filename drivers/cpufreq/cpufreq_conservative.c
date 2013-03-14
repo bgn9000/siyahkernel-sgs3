@@ -396,9 +396,13 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	if (max_load > dbs_tuners_ins.up_threshold) {
 		this_dbs_info->down_skip = 0;
 
-		/* if we are already at full speed then break out early */
+		/* if we are already at full speed, time to start auxiliary CPU */
 		if (this_dbs_info->requested_freq == policy->max)
+		{
+			int i = num_online_cpus();
+			if( i < 4 && !cpu_online(i) ) cpu_up(i);
 			return;
+		}
 
 		freq_target = (dbs_tuners_ins.freq_step * policy->max) / 100;
 
@@ -421,6 +425,10 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 * policy. To be safe, we focus 10 points under the threshold.
 	 */
 	if (max_load < (dbs_tuners_ins.down_threshold - 10)) {
+		// try first to reduce number of auxilary cpus
+		int i = num_online_cpus()-1;
+		if( i > 0 && cpu_online(i) ) { cpu_down(i); return; }
+		
 		freq_target = (dbs_tuners_ins.freq_step * policy->max) / 100;
 
 		this_dbs_info->requested_freq -= freq_target;
