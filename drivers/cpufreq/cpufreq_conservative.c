@@ -46,7 +46,7 @@
 
 static unsigned int min_sampling_rate;
 
-#define LATENCY_MULTIPLIER			(500)
+#define LATENCY_MULTIPLIER			(300)
 #define MIN_LATENCY_MULTIPLIER			(100)
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(10)
@@ -427,7 +427,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	if (max_load < (dbs_tuners_ins.down_threshold - 10)) {
 		// try first to reduce number of auxilary cpus
 		int i = num_online_cpus()-1;
-		if( i > 0 && cpu_online(i) ) { cpu_down(i); return; }
+		if( i > 0) for (; i < 4; ++i) if (cpu_online(i)) { cpu_down(i); return; }
 		
 		freq_target = (dbs_tuners_ins.freq_step * policy->max) / 100;
 
