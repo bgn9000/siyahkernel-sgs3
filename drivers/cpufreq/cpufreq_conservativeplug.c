@@ -1,5 +1,5 @@
 /*
- * CPUFreq AbyssPlug governor
+ * CPUFreq AbyssPlug / Conservative governor
  *
  *
  * Based on hotplug governor
@@ -33,7 +33,7 @@
 #include <linux/slab.h>
 
 /* greater than 95% avg load across online CPUs increases frequency */
-#define DEFAULT_UP_FREQ_MIN_LOAD			(95)
+#define DEFAULT_UP_FREQ_MIN_LOAD			(85)
 
 /* Keep 10% of idle under the up threshold when decreasing the frequency */
 #define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(1)
@@ -42,7 +42,7 @@
 #define DEFAULT_DOWN_FREQ_MAX_LOAD			(50)
 
 /* default sampling period (uSec) is bogus; 10x ondemand's default for x86 */
-#define DEFAULT_SAMPLING_PERIOD				(50000)
+#define DEFAULT_SAMPLING_PERIOD				(70000)
 
 /* default number of sampling periods to average before hotplug-in decision */
 #define DEFAULT_HOTPLUG_IN_SAMPLING_PERIODS		(5)
@@ -54,11 +54,11 @@ static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 		unsigned int event);
 
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_ABYSSPLUG
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVEPLUG
 static
 #endif
-struct cpufreq_governor cpufreq_gov_abyssplug2 = {
-       .name                   = "abyssplug2",
+struct cpufreq_governor cpufreq_gov_conservativeplug = {
+       .name                   = "consplug",
        .governor               = cpufreq_governor_dbs,
        .owner                  = THIS_MODULE,
 };
@@ -116,7 +116,7 @@ static struct dbs_tuners {
 	.hotplug_load_index =		0,
 	.ignore_nice =			0,
 	.io_is_busy =			0,
-	.freq_step = 5,
+	.freq_step = 15,
 };
 
 /*
@@ -131,13 +131,13 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
         u64 idle_time;
         u64 iowait_time;
 
-        /* cpufreq-abyssplug2 always assumes CONFIG_NO_HZ */
+        /* cpufreq-conservativeplug always assumes CONFIG_NO_HZ */
         idle_time = get_cpu_idle_time_us(cpu, wall);
 
 	/* add time spent doing I/O to idle time */
         if (dbs_tuners_ins.io_is_busy) {
                 iowait_time = get_cpu_iowait_time_us(cpu, wall);
-                /* cpufreq-abyssplug2 always assumes CONFIG_NO_HZ */
+                /* cpufreq-conservativeplug always assumes CONFIG_NO_HZ */
                 if (iowait_time != -1ULL && idle_time >= iowait_time)
                         idle_time -= iowait_time;
         }
@@ -181,7 +181,7 @@ static struct notifier_block dbs_cpufreq_notifier_block = {
 
 /* XXX look at global sysfs macros in cpufreq.h, can those be used here? */
 
-/* cpufreq_abyssplug2 Governor Tunables */
+/* cpufreq_conservativeplug Governor Tunables */
 #define show_one(file_name, object)					\
 static ssize_t show_##file_name						\
 (struct kobject *kobj, struct attribute *attr, char *buf)		\
@@ -463,7 +463,7 @@ static struct attribute *dbs_attributes[] = {
 
 static struct attribute_group dbs_attr_group = {
 	.attrs = dbs_attributes,
-	.name = "abyssplug2",
+	.name = "consplug",
 };
 
 /************************** sysfs end ************************/
@@ -804,7 +804,7 @@ static int __init cpufreq_gov_dbs_init(void)
 	if (idle_time != -1ULL) {
 		dbs_tuners_ins.up_threshold = DEFAULT_UP_FREQ_MIN_LOAD;
 	} else {
-		pr_err("cpufreq-abyssplug2s: %s: assumes CONFIG_NO_HZ\n",
+		pr_err("cpufreq-conservativeplug: %s: assumes CONFIG_NO_HZ\n",
 				__func__);
 		return -EINVAL;
 	}
@@ -814,7 +814,7 @@ static int __init cpufreq_gov_dbs_init(void)
 		pr_err("Creation of khotplug failed\n");
 		return -EFAULT;
 	}
-	err = cpufreq_register_governor(&cpufreq_gov_abyssplug2);
+	err = cpufreq_register_governor(&cpufreq_gov_conservativeplug);
 	if (err)
 		destroy_workqueue(khotplug_wq);
 
@@ -823,14 +823,14 @@ static int __init cpufreq_gov_dbs_init(void)
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
-	cpufreq_unregister_governor(&cpufreq_gov_abyssplug2);
+	cpufreq_unregister_governor(&cpufreq_gov_conservativeplug);
 	destroy_workqueue(khotplug_wq);
 }
 
-MODULE_DESCRIPTION("'cpufreq_abyssplug2' - cpufreq governor for dynamic frequency scaling and CPU hotplug");
+MODULE_DESCRIPTION("'cpufreq_conservativeplug' - cpufreq governor for dynamic frequency scaling and CPU hotplug");
 MODULE_LICENSE("GPL");
 
-#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_ABYSSPLUG
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVEPLUG
 fs_initcall(cpufreq_gov_dbs_init);
 #else
 module_init(cpufreq_gov_dbs_init);
