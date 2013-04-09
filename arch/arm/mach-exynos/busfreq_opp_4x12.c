@@ -30,6 +30,8 @@
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/pm_qos_params.h>
+#include <linux/miscdevice.h>
+#include <linux/slab.h>
 
 #include <mach/busfreq_exynos4.h>
 
@@ -70,8 +72,20 @@ unsigned int load_history_size   = LOAD_HISTORY_SIZE;
 static bool mif_locking;
 static bool int_locking;
 
+static unsigned int asv_group_mod;
+void buscontrol_update(unsigned long * bus_voltage);
+int buscontrol_freq(void);
+void buscontrol_volt(unsigned long * freqs, unsigned long * bus_voltage);
+
+static int freq;
+
+static unsigned long * bus_voltage = NULL;
+static unsigned long * freqs = NULL;
+
 /* To save/restore DMC_PAUSE_CTRL register */
 static unsigned int dmc_pause_ctrl;
+
+void buscontrol_cpu_init(void);
 
 enum busfreq_level_idx {
 	LV_0,
@@ -516,11 +530,9 @@ static unsigned int clkdiv_sclkip[LV_END][3] = {
 	{7, 7, 7},
 };
 
-static void exynos4x12_set_bus_volt(void)
+static void exynos4x12_set_bus_volt(unsigned int asv_group_index)
 {
 	unsigned int i;
-
-	asv_group_index = exynos_result_of_asv;
 
 	if (asv_group_index == 0xff)
 		asv_group_index = 0;
@@ -546,6 +558,54 @@ static void exynos4x12_set_bus_volt(void)
 
 	return;
 }
+
+static void exynos4_update_bus_volt(unsigned int asv_group_index)
+{
+	unsigned int i;
+	
+	if ((is_special_flag() >> MIF_LOCK_FLAG) & 0x1)
+		mif_locking = true;
+
+	if ((is_special_flag() >> INT_LOCK_FLAG) & 0x1)
+		int_locking = true;
+
+	printk(KERN_INFO "DVFS : VDD_INT Voltage table updated with %d Group\n", asv_group_index);
+
+	for (i = 0 ; i < LV_END ; i++) {
+		exynos4_busfreq_table[i].volt =
+			exynos4_mif_volt[asv_group_index][i];
+
+		if (mif_locking)
+			exynos4_busfreq_table[i].volt += 50000;
+
+		if (int_locking)
+			exynos4_int_volt[asv_group_index][i] += 25000;
+	}
+
+	return;
+}
+
+static ssize_t show_busfreq_asv_group(struct kobject *kobj,
+		struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", asv_group_mod);
+}
+
+static ssize_t store_busfreq_asv_group(struct kobject *kobj,
+		struct attribute *attr, const char *buf, size_t count)
+{
+	sscanf(buf, "%d", &asv_group_mod);
+	if (asv_group_mod < 0 || asv_group_mod > 12)
+		return -EINVAL;
+	else
+		asv_group_index = asv_group_mod;
+		exynos4_update_bus_volt(asv_group_index);
+
+	return count;
+}
+
+static struct global_attr busfreq_asv_group_attr = __ATTR(busfreq_asv_group,
+		0644, show_busfreq_asv_group, store_busfreq_asv_group);
 
 void exynos4x12_target(int index)
 {
@@ -945,66 +1005,6 @@ static int exynos4x12_busfreq_cpufreq_transition(struct notifier_block *nb,
 	return NOTIFY_DONE;
 }
 
-/* sysfs interface for internal voltage control */
-/*ssize_t show_bus_mV_table(struct cpufreq_policy *policy, char *buf) {
-	  
-	int i, len = 0;
-	if (buf) {
-		for (i = 0 ; i < LV_END ; i++) {
-			len += sprintf(buf + len, "%dmhz: %d mV\n", exynos4_busfreq_table[i].mem_clk/1000,exynos4_busfreq_table[i].volt/1000);
-		}
-	}
-	return len;
-}
-
-ssize_t store_bus_mV_table(struct cpufreq_policy *policy,
-                                      const char *buf, size_t count) {
-
-	unsigned int ret = -EINVAL;
-    int i = 0;
-	int u[7];
-	
-	ret = sscanf(buf, "%d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6]);
-	
-	if(ret != 7)
-		return -EINVAL;
-	
-	for( i = 0; i < LV_END; i++ ) {
-		if (u[i] > CPU_BUS_MAX_UV / 1000) {
-			u[i] = CPU_BUS_MAX_UV / 1000;
-		}
-		else if (u[i] < CPU_BUS_MIN_UV / 1000) {
-			u[i] = CPU_BUS_MIN_UV / 1000;
-		}
-	}
-	
-	for( i = 0; i < LV_END; i++ ) {
-		exynos4_busfreq_table[i].volt = u[i]*1000;
-	}
-	return count;
-}*/
-
-static ssize_t show_busfreq_asv_group(struct kobject *kobj,
-		struct attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", exynos_result_of_asv);
-}
-
-static ssize_t store_busfreq_asv_group(struct kobject *kobj,
-		struct attribute *attr, const char *buf, size_t count)
-{
-	sscanf(buf, "%d", &exynos_result_of_asv);
-	if (exynos_result_of_asv < 0 || exynos_result_of_asv > 6)
-		return -EINVAL;
-	else
-		exynos4x12_set_bus_volt();
-
-	return count;
-}
-
-static struct global_attr busfreq_asv_group_attr = __ATTR(busfreq_asv_group,
-		0644, show_busfreq_asv_group, store_busfreq_asv_group);
-
 int exynos4x12_init(struct device *dev, struct busfreq_data *data)
 {
 	unsigned int i;
@@ -1076,7 +1076,8 @@ int exynos4x12_init(struct device *dev, struct busfreq_data *data)
 		exynos4_busfreq_table[i].clk_dmc0div = tmp;
 	}
 
-	exynos4x12_set_bus_volt();
+	asv_group_index = exynos_result_of_asv & 0xF;
+	exynos4x12_set_bus_volt(asv_group_index);
 
 	for (i = 0; i < LV_END; i++) {
 		ret = opp_add(dev, exynos4_busfreq_table[i].mem_clk,
@@ -1132,11 +1133,184 @@ int exynos4x12_init(struct device *dev, struct busfreq_data *data)
 	   CPUFREQ_TRANSITION_NOTIFIER))
 		pr_err("Falied to register cpufreq notifier\n");
 
-	data->exynos_busqos_notifier.notifier_call = exynos4x12_bus_qos_notifiy;
-	exynos4x12_bus_qos_notifier_init(&data->exynos_busqos_notifier);
-	
 	if (sysfs_create_file(cpufreq_global_kobject, &busfreq_asv_group_attr.attr))
 		pr_err("Failed to create sysfs file(asv_group)\n");
 
+	data->exynos_busqos_notifier.notifier_call = exynos4x12_bus_qos_notifiy;
+	exynos4x12_bus_qos_notifier_init(&data->exynos_busqos_notifier);
+
+	buscontrol_cpu_init();
+
 	return 0;
 }
+
+/* sysfs interface for internal voltage control */
+ssize_t show_bus_mV_table(struct cpufreq_policy *policy, char *buf) {
+	  
+	int i, len = 0;
+	if (buf) {
+		for (i = 0 ; i < LV_END ; i++) {
+			len += sprintf(buf + len, "%dmhz: %d mV\n", exynos4_busfreq_table[i].mem_clk/1000,exynos4_busfreq_table[i].volt/1000);
+		}
+	}
+	return len;
+}
+
+ssize_t store_bus_mV_table(struct cpufreq_policy *policy,
+                                      const char *buf, size_t count) {
+
+	unsigned int ret = -EINVAL;
+    int i = 0;
+	int u[7];
+	
+	ret = sscanf(buf, "%d %d %d %d %d %d %d", &u[0], &u[1], &u[2], &u[3], &u[4], &u[5], &u[6]);
+	
+	if(ret != 7)
+		return -EINVAL;
+	
+	for( i = 0; i < LV_END; i++ ) {
+		if (u[i] > CPU_BUS_MAX_UV / 1000) {
+			u[i] = CPU_BUS_MAX_UV / 1000;
+		}
+		else if (u[i] < CPU_BUS_MIN_UV / 1000) {
+			u[i] = CPU_BUS_MIN_UV / 1000;
+		}
+	}
+	
+	for( i = 0; i < LV_END; i++ ) {
+		exynos4_busfreq_table[i].volt = u[i]*1000;
+	}
+	return count;
+}
+
+void buscontrol_update(unsigned long * bus_voltage)
+{
+    int i;
+
+    for (i = 0; i < LV_END; i++) {
+		if (bus_voltage[i] > CPU_BUS_MAX_UV)
+			bus_voltage[i] = CPU_BUS_MAX_UV;
+		else if (bus_voltage[i] < CPU_BUS_MIN_UV)
+			bus_voltage[i] = CPU_BUS_MIN_UV;
+			
+		exynos4_busfreq_table[i].volt = bus_voltage[i];
+    }
+
+    return;
+}
+EXPORT_SYMBOL(buscontrol_update);
+
+int buscontrol_freq(void) {
+    return LV_END;
+}
+EXPORT_SYMBOL(buscontrol_freq);
+
+void buscontrol_volt(unsigned long * freqs, unsigned long * bus_voltage) {
+    int i = 0;    
+
+	while (exynos4_busfreq_table[i].idx < LV_END) {
+		freqs[i] = exynos4_busfreq_table[i].mem_clk;
+		i++;
+    }
+
+    for (i = 0; i < LV_END; i++) {
+		bus_voltage[i] = exynos4_busfreq_table[i].volt;
+    }
+
+    return;
+}
+EXPORT_SYMBOL(buscontrol_volt);
+
+static ssize_t buscontrol_busvolt_read(struct device * dev, struct device_attribute * attr, char * buf) {
+    
+    int i, j = 0;
+
+    for (i = 0; i < freq; i++) {
+		j += sprintf(&buf[j], "%lumhz: %lu mV\n", freqs[i] / 1000, bus_voltage[i] / 1000);
+	}
+
+    return j;
+}
+
+static ssize_t buscontrol_busvolt_write(struct device * dev, struct device_attribute * attr, const char * buf, size_t size) {
+    int i = 0, j = 0, next_freq = 0;
+    unsigned long voltage;
+
+    char buffer[20];
+
+    while (1) {
+		buffer[j] = buf[i];
+
+		i++;
+		j++;
+
+		if (buf[i] == ' ' || buf[i] == '\0') {
+			buffer[j] = '\0';
+
+			if (sscanf(buffer, "%lu", &voltage) == 1) {
+				bus_voltage[next_freq] = voltage * 1000;
+
+				next_freq++;
+			}
+
+			if (buf[i] == '\0' || next_freq >= freq) {
+				break;
+			}
+
+			j = 0;
+		}
+	}
+
+    buscontrol_update(bus_voltage);
+    return next_freq;
+}
+
+
+void buscontrol_cpu_init(void) {
+
+	freq = buscontrol_freq();
+
+    bus_voltage = kzalloc(freq * sizeof(unsigned long), GFP_KERNEL);
+    freqs = kzalloc(freq * sizeof(unsigned long), GFP_KERNEL);
+
+    buscontrol_volt(freqs, bus_voltage);
+}
+
+static DEVICE_ATTR(bus_volt, S_IRUGO | S_IWUGO, buscontrol_busvolt_read, buscontrol_busvolt_write);
+
+static struct attribute *buscontrol_attributes[] = {
+	&dev_attr_bus_volt.attr,
+	NULL
+};
+
+static struct attribute_group buscontrol_group = {
+	.attrs = buscontrol_attributes,
+};
+
+static struct miscdevice buscontrol_device = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "buscontrol",
+};
+
+static int __init buscontrol_init(void) {
+    int ret;
+
+    pr_info("%s misc_register(%s)\n", __FUNCTION__, buscontrol_device.name);
+
+    ret = misc_register(&buscontrol_device);
+
+    if (ret) {
+		pr_err("%s misc_register(%s) fail\n", __FUNCTION__, buscontrol_device.name);
+
+		return 1;
+	}
+
+    if (sysfs_create_group(&buscontrol_device.this_device->kobj, &buscontrol_group) < 0) {
+		pr_err("%s sysfs_create_group fail\n", __FUNCTION__);
+		pr_err("Failed to create sysfs group for device (%s)!\n", buscontrol_device.name);
+	}
+
+    return 0;
+}
+
+device_initcall(buscontrol_init);
