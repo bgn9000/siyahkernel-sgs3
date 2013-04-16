@@ -91,7 +91,23 @@ static unsigned int exynos_get_safe_armvolt(unsigned int old_index, unsigned int
 	return safe_arm_volt;
 }
 
-unsigned int smooth_level = L4;
+unsigned int smooth_level = L7;
+
+static ssize_t show_smooth_level(struct kobject *kobj,
+		struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", smooth_level);
+}
+
+static ssize_t store_smooth_level(struct kobject *kobj,
+		struct attribute *attr, const char *buf, size_t count)
+{
+	sscanf(buf, "%d", &smooth_level);
+	return count;
+}
+
+static struct global_attr smooth_level_attr = __ATTR(smooth_level,
+		0644, show_smooth_level, store_smooth_level);
 
 static int exynos_target(struct cpufreq_policy *policy,
 			  unsigned int target_freq,
@@ -835,6 +851,8 @@ static int __init exynos_cpufreq_init(void)
 				    &pm_qos_cpu_dma_notifier);
 #endif
 
+	if (sysfs_create_file(cpufreq_global_kobject, &smooth_level_attr.attr))
+		pr_err("Failed to create sysfs file(smooth_level)\n");
 	return 0;
 err_cpufreq:
 	unregister_reboot_notifier(&exynos_cpufreq_reboot_notifier);
