@@ -33,22 +33,22 @@
 #include <linux/slab.h>
 
 /* greater than 95% avg load across online CPUs increases frequency */
-#define DEFAULT_UP_FREQ_MIN_LOAD			(85)
+#define DEFAULT_UP_FREQ_MIN_LOAD			(95)
 
 /* Keep 10% of idle under the up threshold when decreasing the frequency */
 #define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(1)
 
 /* less than 20% avg load across online CPUs decreases frequency */
-#define DEFAULT_DOWN_FREQ_MAX_LOAD			(50)
+#define DEFAULT_DOWN_FREQ_MAX_LOAD			(70)
 
 /* default sampling period (uSec) is bogus; 10x ondemand's default for x86 */
-#define DEFAULT_SAMPLING_PERIOD				(70000)
+#define DEFAULT_SAMPLING_PERIOD				(50000)
 
 /* default number of sampling periods to average before hotplug-in decision */
-#define DEFAULT_HOTPLUG_IN_SAMPLING_PERIODS		(5)
+#define DEFAULT_HOTPLUG_IN_SAMPLING_PERIODS		(2)
 
 /* default number of sampling periods to average before hotplug-out decision */
-#define DEFAULT_HOTPLUG_OUT_SAMPLING_PERIODS		(20)
+#define DEFAULT_HOTPLUG_OUT_SAMPLING_PERIODS		(40)
 
 static void do_dbs_timer(struct work_struct *work);
 static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
@@ -116,7 +116,7 @@ static struct dbs_tuners {
 	.hotplug_load_index =		0,
 	.ignore_nice =			0,
 	.io_is_busy =			0,
-	.freq_step = 15,
+	.freq_step = 10,
 };
 
 /*
