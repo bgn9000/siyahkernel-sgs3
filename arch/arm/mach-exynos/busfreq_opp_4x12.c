@@ -547,51 +547,6 @@ static void exynos4x12_set_bus_volt(void)
 	return;
 }
 
-// static ssize_t buscontrol_busvolt_read(struct device * dev, struct device_attribute * attr, char * buf) {
-//     
-//     int i, j = 0;
-// 
-//     for (i = 0; i < freq; i++) {
-// 		j += sprintf(&buf[j], "%lumhz: %lu mV\n", freqs[i] / 1000, bus_voltage[i] / 1000);
-// 	}
-// 
-//     return j;
-// }
-// 
-// static ssize_t buscontrol_busvolt_write(struct device * dev, struct device_attribute * attr, const char * buf, size_t size) {
-//     int i = 0, j = 0, next_freq = 0;
-//     unsigned long voltage;
-// 
-//     char buffer[20];
-// 
-//     while (1) {
-// 		buffer[j] = buf[i];
-// 
-// 		i++;
-// 		j++;
-// 
-// 		if (buf[i] == ' ' || buf[i] == '\0') {
-// 			buffer[j] = '\0';
-// 
-// 			if (sscanf(buffer, "%lu", &voltage) == 1) {
-// 				bus_voltage[next_freq] = voltage * 1000;
-// 
-// 				next_freq++;
-// 			}
-// 
-// 			if (buf[i] == '\0' || next_freq >= freq) {
-// 				break;
-// 			}
-// 
-// 			j = 0;
-// 		}
-// 	}
-// 
-//     buscontrol_update(bus_voltage);
-//     return next_freq;
-// }
-
-
 ssize_t show_bus_mV_table(struct kobject *kobj,
 		struct attribute *attr, char *buf) {
 	  

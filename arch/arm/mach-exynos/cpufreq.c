@@ -91,7 +91,7 @@ static unsigned int exynos_get_safe_armvolt(unsigned int old_index, unsigned int
 	return safe_arm_volt;
 }
 
-unsigned int smooth_level = L7;
+unsigned int smooth_level = L4;
 
 static ssize_t show_smooth_level(struct kobject *kobj,
 		struct attribute *attr, char *buf)
@@ -153,13 +153,7 @@ static int exynos_target(struct cpufreq_policy *policy,
 
 	if (!exynos_cpufreq_lock_disable && (index < g_cpufreq_limit_level))
 		index = g_cpufreq_limit_level;
-
-#if defined(CONFIG_CPU_EXYNOS4210)
-	/* Do NOT step up max arm clock directly to reduce power consumption */
-	if (index <= 4 && old_index > smooth_level && smooth_level >= L4)
-		index = smooth_level;
-#endif
-
+	
 	freqs.new = freq_table[index].frequency;
 	freqs.cpu = policy->cpu;
 
@@ -612,8 +606,8 @@ static void exynos_save_gov_freq(void)
 	unsigned int cpu = 0;
 
 	exynos_info->gov_support_freq = exynos_getspeed(cpu);
-	pr_debug("cur_freq[%d] saved to freq[%d]\n", exynos_getspeed(0),
-			exynos_info->gov_support_freq);
+	pr_debug("cur_freq[%d] saved to freq[%d]\n", exynos_getspeed(cpu),
+		exynos_info->gov_support_freq);
 }
 
 static void exynos_restore_gov_freq(struct cpufreq_policy *policy)
@@ -645,16 +639,9 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		if (exynos_cpufreq_lock_disable)
 			exynos_save_gov_freq();
 
-		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM,
-					   exynos_info->pm_lock_idx);
+		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM, smooth_level);
 		if (ret < 0)
 			return NOTIFY_BAD;
-#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
-		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM,
-						exynos_info->pm_lock_idx);
-		if (ret < 0)
-			return NOTIFY_BAD;
-#endif
 		exynos_cpufreq_disable = true;
 
 #ifdef CONFIG_SLP
@@ -675,16 +662,12 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 	case PM_POST_SUSPEND:
 		pr_debug("PM_POST_SUSPEND for CPUFREQ: %d\n", ret);
 		exynos_cpufreq_lock_free(DVFS_LOCK_ID_PM);
-#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
-		exynos_cpufreq_upper_limit_free(DVFS_LOCK_ID_PM);
-#endif
 		exynos_cpufreq_disable = false;
 		/* If current governor is userspace or performance or powersave,
 		 * restore the saved cpufreq after waekup.
 		 */
 		if (exynos_cpufreq_lock_disable)
 			exynos_restore_gov_freq(policy);
-
 
 		return NOTIFY_OK;
 	}
@@ -750,11 +733,7 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
 
 	/* Safe default startup limits */
-#ifdef CONFIG_CPU_EXYNOS4210
-	policy->max = 1200000;
-#else
 	policy->max = 1400000;
-#endif
 	policy->min = 200000;
 
 	return 0;
