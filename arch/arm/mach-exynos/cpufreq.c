@@ -642,6 +642,11 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM, smooth_level);
 		if (ret < 0)
 			return NOTIFY_BAD;
+#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
+		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM, smooth_level);
+		if (ret < 0)
+			return NOTIFY_BAD;
+#endif
 		exynos_cpufreq_disable = true;
 
 #ifdef CONFIG_SLP
@@ -662,6 +667,9 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 	case PM_POST_SUSPEND:
 		pr_debug("PM_POST_SUSPEND for CPUFREQ: %d\n", ret);
 		exynos_cpufreq_lock_free(DVFS_LOCK_ID_PM);
+#if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
+		exynos_cpufreq_upper_limit_free(DVFS_LOCK_ID_PM);
+#endif
 		exynos_cpufreq_disable = false;
 		/* If current governor is userspace or performance or powersave,
 		 * restore the saved cpufreq after waekup.
