@@ -665,13 +665,6 @@ asmlinkage void __exception_irq_entry do_IPI(int ipinr, struct pt_regs *regs)
 		irq_enter();
 		ipi_cpu_stop(cpu);
 		irq_exit();
-<<<<<<< HEAD
-		break;
-
-	case IPI_CPU_BACKTRACE:
-		ipi_cpu_backtrace(cpu, regs);
-=======
->>>>>>> d187739... ARM: fix rcu stalls on SMP platforms
 		break;
 
 	default:
