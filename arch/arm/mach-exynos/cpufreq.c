@@ -91,23 +91,23 @@ static unsigned int exynos_get_safe_armvolt(unsigned int old_index, unsigned int
 	return safe_arm_volt;
 }
 
-unsigned int smooth_level = L4;
+unsigned int lock_idx = L7;
 
-static ssize_t show_smooth_level(struct kobject *kobj,
+static ssize_t show_lock_idx(struct kobject *kobj,
 		struct attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", smooth_level);
+	return sprintf(buf, "%d\n", lock_idx);
 }
 
-static ssize_t store_smooth_level(struct kobject *kobj,
+static ssize_t store_lock_idx(struct kobject *kobj,
 		struct attribute *attr, const char *buf, size_t count)
 {
-	sscanf(buf, "%d", &smooth_level);
+	sscanf(buf, "%d", &lock_idx);
 	return count;
 }
 
-static struct global_attr smooth_level_attr = __ATTR(smooth_level,
-		0644, show_smooth_level, store_smooth_level);
+static struct global_attr lock_idx_attr = __ATTR(lock_idx,
+		0644, show_lock_idx, store_lock_idx);
 
 static int exynos_target(struct cpufreq_policy *policy,
 			  unsigned int target_freq,
@@ -639,11 +639,11 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		if (exynos_cpufreq_lock_disable)
 			exynos_save_gov_freq();
 
-		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM, smooth_level);
+		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM, lock_idx);
 		if (ret < 0)
 			return NOTIFY_BAD;
 #if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
-		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM, smooth_level);
+		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM, lock_idx);
 		if (ret < 0)
 			return NOTIFY_BAD;
 #endif
@@ -741,7 +741,11 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
 
 	/* Safe default startup limits */
-	policy->max = 1400000;
+#ifdef CONFIG_CPU_EXYNOS4210
+        policy->max = 1200000;
+#else
+        policy->max = 1400000;
+#endif
 	policy->min = 200000;
 
 	return 0;
@@ -838,8 +842,8 @@ static int __init exynos_cpufreq_init(void)
 				    &pm_qos_cpu_dma_notifier);
 #endif
 
-	if (sysfs_create_file(cpufreq_global_kobject, &smooth_level_attr.attr))
-		pr_err("Failed to create sysfs file(smooth_level)\n");
+	if (sysfs_create_file(cpufreq_global_kobject, &lock_idx_attr.attr))
+		pr_err("Failed to create sysfs file(lock_idx)\n");
 	return 0;
 err_cpufreq:
 	unregister_reboot_notifier(&exynos_cpufreq_reboot_notifier);
