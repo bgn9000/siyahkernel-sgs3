@@ -93,22 +93,6 @@ static unsigned int exynos_get_safe_armvolt(unsigned int old_index, unsigned int
 
 unsigned int smooth_level = L4;
 
-static ssize_t show_smooth_level(struct kobject *kobj,
-		struct attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", smooth_level);
-}
-
-static ssize_t store_smooth_level(struct kobject *kobj,
-		struct attribute *attr, const char *buf, size_t count)
-{
-	sscanf(buf, "%d", &smooth_level);
-	return count;
-}
-
-static struct global_attr smooth_level_attr = __ATTR(smooth_level,
-		0644, show_smooth_level, store_smooth_level);
-
 static int exynos_target(struct cpufreq_policy *policy,
 			  unsigned int target_freq,
 			  unsigned int relation)
@@ -153,7 +137,13 @@ static int exynos_target(struct cpufreq_policy *policy,
 
 	if (!exynos_cpufreq_lock_disable && (index < g_cpufreq_limit_level))
 		index = g_cpufreq_limit_level;
-	
+
+#if defined(CONFIG_CPU_EXYNOS4210)
+	/* Do NOT step up max arm clock directly to reduce power consumption */
+	if (index <= 4 && old_index > smooth_level && smooth_level >= L4)
+		index = smooth_level;
+#endif
+
 	freqs.new = freq_table[index].frequency;
 	freqs.cpu = policy->cpu;
 
@@ -606,8 +596,8 @@ static void exynos_save_gov_freq(void)
 	unsigned int cpu = 0;
 
 	exynos_info->gov_support_freq = exynos_getspeed(cpu);
-	pr_debug("cur_freq[%d] saved to freq[%d]\n", exynos_getspeed(cpu),
-		exynos_info->gov_support_freq);
+	pr_debug("cur_freq[%d] saved to freq[%d]\n", exynos_getspeed(0),
+			exynos_info->gov_support_freq);
 }
 
 static void exynos_restore_gov_freq(struct cpufreq_policy *policy)
@@ -639,11 +629,13 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		if (exynos_cpufreq_lock_disable)
 			exynos_save_gov_freq();
 
-		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM, smooth_level);
+		ret = exynos_cpufreq_lock(DVFS_LOCK_ID_PM,
+					   exynos_info->pm_lock_idx);
 		if (ret < 0)
 			return NOTIFY_BAD;
 #if defined(CONFIG_CPU_EXYNOS4210) || defined(CONFIG_SLP)
-		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM, smooth_level);
+		ret = exynos_cpufreq_upper_limit(DVFS_LOCK_ID_PM,
+						exynos_info->pm_lock_idx);
 		if (ret < 0)
 			return NOTIFY_BAD;
 #endif
@@ -676,6 +668,7 @@ static int exynos_cpufreq_notifier_event(struct notifier_block *this,
 		 */
 		if (exynos_cpufreq_lock_disable)
 			exynos_restore_gov_freq(policy);
+
 
 		return NOTIFY_OK;
 	}
@@ -741,7 +734,11 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
 
 	/* Safe default startup limits */
+#ifdef CONFIG_CPU_EXYNOS4210
+	policy->max = 1200000;
+#else
 	policy->max = 1400000;
+#endif
 	policy->min = 200000;
 
 	return 0;
@@ -838,8 +835,6 @@ static int __init exynos_cpufreq_init(void)
 				    &pm_qos_cpu_dma_notifier);
 #endif
 
-	if (sysfs_create_file(cpufreq_global_kobject, &smooth_level_attr.attr))
-		pr_err("Failed to create sysfs file(smooth_level)\n");
 	return 0;
 err_cpufreq:
 	unregister_reboot_notifier(&exynos_cpufreq_reboot_notifier);
