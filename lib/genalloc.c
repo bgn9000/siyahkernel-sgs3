@@ -79,7 +79,7 @@ gen_pool_add_virt(struct gen_pool *pool, unsigned long virt, phys_addr_t phys,
 		  size_t size, int nid)
 {
 	struct gen_pool_chunk *chunk;
-	int nbits = size >> pool->min_alloc_order;
+	int nbits = size >> pool->order;
 	int nbytes = sizeof(struct gen_pool_chunk) +
 				BITS_TO_LONGS(nbits) * sizeof(long);
 
