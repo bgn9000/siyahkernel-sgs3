@@ -274,7 +274,7 @@ struct max8997_platform_data exynos4_max8997_info = {
 #endif
 };
 #elif defined(CONFIG_REGULATOR_MAX77686)
-/* max77686 */
+/* samsung s3 international : max77686 */
 
 #ifdef CONFIG_SND_SOC_WM8994
 static struct regulator_consumer_supply ldo3_supply[] = {
@@ -469,7 +469,7 @@ REGULATOR_INIT(ldo24, "VDD_1.8V_TSP", 1800000, 1800000, 0,
 REGULATOR_INIT(ldo24, "VDD_2.2V_LCD", 2200000, 2200000, 0,
 	       REGULATOR_CHANGE_STATUS, 1);
 #endif
-REGULATOR_INIT(ldo25, "VCC_3.3V_LCD", 3300000, 3300000, 0,
+REGULATOR_INIT(ldo25, "VCC_3.3V_LCD", 3100000, 3100000, 0,
 	       REGULATOR_CHANGE_STATUS, 1);
 REGULATOR_INIT(ldo26, "VCC_MOTOR_3.0V", 3000000, 3000000, 0,
 	       REGULATOR_CHANGE_STATUS, 1);
@@ -496,8 +496,8 @@ static struct regulator_init_data ldo24_pq11_init_data = {
 static struct regulator_init_data ldo25_redwood_init_data = {
 	.constraints = {
 		.name = "LED_A_2.8V",
-		.min_uV = 2800000,
-		.max_uV = 2800000,
+		.min_uV = 2600000,
+		.max_uV = 2600000,
 		.always_on = 0,
 		.boot_on = 0,
 		.apply_uV = 1,
