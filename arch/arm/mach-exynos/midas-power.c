@@ -496,8 +496,8 @@ static struct regulator_init_data ldo24_pq11_init_data = {
 static struct regulator_init_data ldo25_redwood_init_data = {
 	.constraints = {
 		.name = "LED_A_2.8V",
-		.min_uV = 2600000,
-		.max_uV = 2600000,
+		.min_uV = 2800000,
+		.max_uV = 2800000,
 		.always_on = 0,
 		.boot_on = 0,
 		.apply_uV = 1,
@@ -686,32 +686,32 @@ struct max77686_platform_data exynos4_max77686_info = {
 		GPIO_BUCK3_SEL,
 		GPIO_BUCK4_SEL,
 	},
-	.buck2_voltage[0] = 1100000,	/* 1.1V */
-	.buck2_voltage[1] = 1100000,	/* 1.1V */
-	.buck2_voltage[2] = 1100000,	/* 1.1V */
-	.buck2_voltage[3] = 1100000,	/* 1.1V */
-	.buck2_voltage[4] = 1100000,	/* 1.1V */
-	.buck2_voltage[5] = 1100000,	/* 1.1V */
-	.buck2_voltage[6] = 1100000,	/* 1.1V */
-	.buck2_voltage[7] = 1100000,	/* 1.1V */
+	.buck2_voltage[0] = 1000000,	/* 1.1V */
+	.buck2_voltage[1] = 1000000,	/* 1.1V */
+	.buck2_voltage[2] = 1000000,	/* 1.1V */
+	.buck2_voltage[3] = 1000000,	/* 1.1V */
+	.buck2_voltage[4] = 1000000,	/* 1.1V */
+	.buck2_voltage[5] = 1000000,	/* 1.1V */
+	.buck2_voltage[6] = 1000000,	/* 1.1V */
+	.buck2_voltage[7] = 1000000,	/* 1.1V */
 
-	.buck3_voltage[0] = 1100000,	/* 1.1V */
+	.buck3_voltage[0] = 1000000,	/* 1.1V */
 	.buck3_voltage[1] = 1000000,	/* 1.0V */
-	.buck3_voltage[2] = 1100000,	/* 1.1V */
-	.buck3_voltage[3] = 1100000,	/* 1.1V */
-	.buck3_voltage[4] = 1100000,	/* 1.1V */
-	.buck3_voltage[5] = 1100000,	/* 1.1V */
-	.buck3_voltage[6] = 1100000,	/* 1.1V */
-	.buck3_voltage[7] = 1100000,	/* 1.1V */
+	.buck3_voltage[2] = 1000000,	/* 1.1V */
+	.buck3_voltage[3] = 1000000,	/* 1.1V */
+	.buck3_voltage[4] = 1000000,	/* 1.1V */
+	.buck3_voltage[5] = 1000000,	/* 1.1V */
+	.buck3_voltage[6] = 1000000,	/* 1.1V */
+	.buck3_voltage[7] = 1000000,	/* 1.1V */
 
-	.buck4_voltage[0] = 1100000,	/* 1.1V */
+	.buck4_voltage[0] = 1000000,	/* 1.1V */
 	.buck4_voltage[1] = 1000000,	/* 1.0V */
-	.buck4_voltage[2] = 1100000,	/* 1.1V */
-	.buck4_voltage[3] = 1100000,	/* 1.1V */
-	.buck4_voltage[4] = 1100000,	/* 1.1V */
-	.buck4_voltage[5] = 1100000,	/* 1.1V */
-	.buck4_voltage[6] = 1100000,	/* 1.1V */
-	.buck4_voltage[7] = 1100000,	/* 1.1V */
+	.buck4_voltage[2] = 1000000,	/* 1.1V */
+	.buck4_voltage[3] = 1000000,	/* 1.1V */
+	.buck4_voltage[4] = 1000000,	/* 1.1V */
+	.buck4_voltage[5] = 1000000,	/* 1.1V */
+	.buck4_voltage[6] = 1000000,	/* 1.1V */
+	.buck4_voltage[7] = 1000000,	/* 1.1V */
 };
 
 void midas_power_init(void)

@@ -33,13 +33,13 @@
 #include <linux/slab.h>
 
 /* greater than 95% avg load across online CPUs increases frequency */
-#define DEFAULT_UP_FREQ_MIN_LOAD			(95)
+#define DEFAULT_UP_FREQ_MIN_LOAD			(60)
 
 /* Keep 10% of idle under the up threshold when decreasing the frequency */
 #define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(1)
 
 /* less than 20% avg load across online CPUs decreases frequency */
-#define DEFAULT_DOWN_FREQ_MAX_LOAD			(70)
+#define DEFAULT_DOWN_FREQ_MAX_LOAD			(45)
 
 /* default sampling period (uSec) is bogus; 10x ondemand's default for x86 */
 #define DEFAULT_SAMPLING_PERIOD				(50000)
@@ -474,8 +474,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int total_load = 0;
 	/* single largest CPU load percentage*/
 	unsigned int max_load = 0;
-	/* largest CPU load in terms of frequency */
-	unsigned int max_load_freq = 0;
 	/* average load across all enabled CPUs */
 	unsigned int avg_load = 0;
 	/* average load across multiple sampling periods for hotplug events */
@@ -528,9 +526,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		if (load > max_load)
 			max_load = load;
 	}
-
-	/* use the max load in the OPP freq change policy */
-	max_load_freq = max_load * policy->cur;
 
 	/* calculate the average load across all related CPUs */
 	avg_load = total_load / num_online_cpus();
@@ -593,7 +588,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		goto out;
 
 	/* Check for frequency increase */
-	if (max_load > dbs_tuners_ins.up_threshold) {
+	if (avg_load /*max_load*/ > dbs_tuners_ins.up_threshold) {
 		freq_target = (dbs_tuners_ins.freq_step * policy->max) / 100;
 
 		/* max freq cannot be less than 100. But who knows.... */
@@ -614,7 +609,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		/* are we at the minimum frequency already? */
 		if (policy->cur <= policy->min) {
 			/* should we disable auxillary CPUs? */
-			if (num_online_cpus() > 2 && hotplug_out_avg_load <
+			if (num_online_cpus() > 1 && hotplug_out_avg_load <
 					dbs_tuners_ins.down_threshold) {
 				queue_work_on(this_dbs_info->cpu, khotplug_wq,
 					&this_dbs_info->cpu_down_work);
@@ -628,7 +623,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 * can support the current CPU usage without triggering the up
 	 * policy. To be safe, we focus 10 points under the threshold.
 	 */
-	if (max_load < (dbs_tuners_ins.down_threshold - 10)) {
+	if (avg_load /*max_load*/ < (dbs_tuners_ins.down_threshold - 10)) {
 		freq_target = (dbs_tuners_ins.freq_step * policy->max) / 100;
 
 		this_dbs_info->requested_freq -= freq_target;
