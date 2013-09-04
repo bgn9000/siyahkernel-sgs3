@@ -106,6 +106,7 @@ static struct dbs_tuners {
 	unsigned int ignore_nice;
 	unsigned int io_is_busy;
 	unsigned int freq_step;
+	unsigned int freq_limit_sleep;
 } dbs_tuners_ins = {
 	.sampling_rate =		DEFAULT_SAMPLING_PERIOD,
 	.up_threshold =			DEFAULT_UP_FREQ_MIN_LOAD,
@@ -117,6 +118,7 @@ static struct dbs_tuners {
 	.ignore_nice =			0,
 	.io_is_busy =			0,
 	.freq_step = 15,
+	.freq_limit_sleep = 500000,
 };
 
 /*
@@ -197,6 +199,7 @@ show_one(hotplug_out_sampling_periods, hotplug_out_sampling_periods);
 show_one(ignore_nice_load, ignore_nice);
 show_one(io_is_busy, io_is_busy);
 show_one(freq_step, freq_step);
+show_one(freq_limit_sleep, freq_limit_sleep);
 
 static ssize_t store_sampling_rate(struct kobject *a, struct attribute *b,
 				   const char *buf, size_t count)
@@ -438,6 +441,40 @@ static ssize_t store_freq_step(struct kobject *a, struct attribute *b,
 	return count;
 }
 
+static ssize_t store_freq_limit_sleep(struct kobject *a,
+					  struct attribute *b,
+					  const char *buf, size_t count)
+{
+	unsigned int input;
+	struct cpufreq_frequency_table *table;	// Yank : Use system frequency table
+	int ret;
+	int i=0;
+
+	ret = sscanf(buf, "%u", &input);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	if (input == 0) {
+	     dbs_tuners_ins.freq_limit_sleep = input;
+	     return count;
+	}
+
+	table = cpufreq_frequency_get_table(0);	// Yank : Get system frequency table
+
+	if (!table) {
+		return -EINVAL;
+	} else {
+		for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++)
+			if (table[i].frequency == input) {
+			    dbs_tuners_ins.freq_limit_sleep = input;
+			    return count;
+			}
+	}
+
+	return -EINVAL;
+}
+
 define_one_global_rw(sampling_rate);
 define_one_global_rw(up_threshold);
 define_one_global_rw(down_differential);
@@ -447,6 +484,7 @@ define_one_global_rw(hotplug_out_sampling_periods);
 define_one_global_rw(ignore_nice_load);
 define_one_global_rw(io_is_busy);
 define_one_global_rw(freq_step);
+define_one_global_rw(freq_limit_sleep);
 
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate.attr,
@@ -458,6 +496,7 @@ static struct attribute *dbs_attributes[] = {
 	&ignore_nice_load.attr,
 	&io_is_busy.attr,
 	&freq_step.attr,
+	&freq_limit_sleep.attr,
 	NULL
 };
 
