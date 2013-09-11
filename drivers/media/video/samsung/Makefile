@@ -39,5 +39,6 @@ obj-$(CONFIG_VIDEO_MALI400MP)	+= mali/
 obj-$(CONFIG_MALI_R3P0_LSI)	+= mali_r3p0_lsi/
 endif
 
+obj-$(CONFIG_EXYNOS_MEDIA_MONITOR)  += media_monitor/
 
 EXTRA_CFLAGS += -Idrivers/media/video
