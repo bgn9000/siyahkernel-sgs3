@@ -52,6 +52,9 @@
 
 #define SYSFS_DEBUG_BUSFREQ
 
+#define CPU_BUS_MAX_UV 1300000
+#define CPU_BUS_MIN_UV 750000
+
 static unsigned up_threshold;
 static unsigned down_threshold;
 static struct regulator *int_regulator;
