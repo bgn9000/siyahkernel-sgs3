@@ -9,7 +9,7 @@ export RAMFS_SOURCE=`readlink -f $KERNELDIR/../ramfs-sgs3`
 export PARENT_DIR=`readlink -f ..`
 export USE_SEC_FIPS_MODE=true
 # GCC 4.7.2
-export CROSS_COMPILE=$PARENT_DIR/../arm-2012/bin_472/arm-linux-gnueabihf-
+export CROSS_COMPILE=$PARENT_DIR/../arm-2012/bin_472/arm-linux-
 
 if [ "${1}" != "" ];then
   export KERNELDIR=`readlink -f ${1}`
